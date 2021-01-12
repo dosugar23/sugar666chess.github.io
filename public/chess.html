@@ -1,0 +1,124 @@
+<html>
+	<head>
+		<title>Simple Multiplayer 3D Chess</title>
+		<style>
+			canvas {
+				width:100%;
+				height:100%;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="./libs/three.js"></script>
+		<script src="./libs/threex.domevents.js"></script>
+		<script src="./useScene.js"></script>
+		<script src="./useChess.js"></script>
+		<script>
+			/* The scene, camera and renderer variables respectively contain the three objects needed by three.js to manage the 3D environment	
+			*  The domEvents variable is used by threex.domevents.js to be able to hook events to 3D objects*/
+			var scene,camera,renderer,domEvents;
+			// This variable contains the JSON loader to load blendered models
+			var loader=new THREE.JSONLoader();
+			// These variables tell me at each call to render () in which direction to rotate the camera
+			var rotateRight=false,rotateLeft=false,changeViewpoint=false;
+			// These variables contain respectively the board, the move boxes and the black and white pieces
+			var plane=new Array(8);
+			var moves=new Array(8);
+			var white=new Array(16);
+			var black=new Array(16);
+			// actual indicates the last piece selected and turn indicates the turn of the board
+			var actual,turn="w";
+			// I keep track of the rotation of the camera
+			var rotation=0,change=0;
+			
+			// I start the game and render the scene
+			init();
+			render();
+			
+			// This function creates the scene
+			function init() {
+			// I prepare the scene, the camera and the renderer
+				scene=new THREE.Scene();
+				camera=new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,1,1000);
+				camera.position.set(0,10,10);
+				camera.lookAt(scene.position);
+				scene.add(camera);
+				renderer=new THREE.WebGLRenderer({antialias: true});
+				renderer.setSize(window.innerWidth,window.innerHeight);
+				document.body.appendChild(renderer.domElement);
+				renderer.setClearColorHex(0x999999,1);
+			// I prepare the DOM event handler
+				domEvents=new THREEx.DomEvents(camera,renderer.domElement);
+			// I create the edge of the chessboard
+				var border=new THREE.Mesh(new THREE.PlaneGeometry(8.5,8.5),new THREE.MeshBasicMaterial({color:0xcc9900}));
+				border.position.set(0,-0.01,0);
+				border.rotation.x=-90*(Math.PI/180);
+				scene.add(border);
+			// I create the squares of the board, marking the piece on it in the name
+				var plane_geometry=new THREE.PlaneGeometry(1,1);
+				var white_material=new THREE.MeshBasicMaterial({color:"white"});
+				var black_material=new THREE.MeshBasicMaterial({color:"black"});
+				for(var i=0;i<8;i++) {
+					plane[i]=new Array(8);
+					for(var j=0;j<8;j++) {
+						if((i+j)%2==0)
+							plane[i][j]=new THREE.Mesh(plane_geometry,white_material);
+						else
+							plane[i][j]=new THREE.Mesh(plane_geometry,black_material);
+						plane[i][j].position.set(3.5-i,0,3.5-j);
+						plane[i][j].rotation.x=-90*(Math.PI/180);
+						plane[i][j].name="0";
+						scene.add(plane[i][j]);
+					}
+				}
+			// Creo the squares of the moves, you hook the event to move the pieces but I don't show them, marking me in the name if they are active or not
+				var small_plane_geometry=new THREE.PlaneGeometry(0.9,0.9);
+				var red_material=new THREE.MeshBasicMaterial({color:"red"});
+				for(var i=0;i<8;i++) {
+					moves[i]=new Array(8);
+					for(var j=0;j<8;j++) {
+						moves[i][j]=new THREE.Mesh(small_plane_geometry,red_material);
+						moves[i][j].position.set(3.5-i,0.001,3.5-j);
+						moves[i][j].rotation.x=-90*(Math.PI/180);
+						moves[i][j].name="0";
+						domEvents.bind(moves[i][j],"click",function(event) { moveTo(event.target); });
+					}
+				}
+			// I create four lights on the sides of the board
+				var light1=new THREE.DirectionalLight(0xffffff);
+				light1.position.set(0,20,25);
+				light1.target.position.set(0,0,0);
+				scene.add(light1);
+				var light2=new THREE.DirectionalLight(0xffffff);
+				light2.position.set(0,20,-25);
+				light2.target.position.set(0,0,0);
+				scene.add(light2);
+				var light3=new THREE.DirectionalLight(0xffffff);
+				light3.position.set(25,20,0);
+				light3.target.position.set(0,0,0);
+				scene.add(light3);
+				var light4=new THREE.DirectionalLight(0xffffff);
+				light4.position.set(-25,20,0);
+				light4.target.position.set(0,0,0);
+				scene.add(light4);
+			// I create the keyboard event to manage the camera movements and the window resizing
+				window.addEventListener("resize",windowResize);
+				window.addEventListener("keydown",function(event) { activateMove(event.keyCode) });
+				window.addEventListener("keyup",function(event) { deactivateMove(event.keyCode) });
+				fillBoard();
+			}
+			// This function that renders the scene
+			function render() {
+				requestAnimationFrame(render);
+				update();
+				renderer.render(scene,camera);
+			}
+			// This function resets the aspect ratio of the scene if the window is resized
+			function windowResize() {
+				camera.aspect=window.innerWidth/window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth,window.innerHeight);
+			}
+		</script>
+	</body>
+</html>
