@@ -1,4 +1,4 @@
-# Sugar 666
+
 # sugar666chess
 ## Author: Bao Nguyen
 ## Phone Number: (+84)905168140
